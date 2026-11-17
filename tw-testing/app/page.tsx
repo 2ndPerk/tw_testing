@@ -1,4 +1,5 @@
 "use client";
+export const dynamic = "force-dynamic";
 
 import { db } from "@/lib/firebase";
 import { collection, addDoc } from "firebase/firestore";
