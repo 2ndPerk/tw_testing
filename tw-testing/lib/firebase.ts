@@ -14,8 +14,10 @@ const localFirebaseConfig = {
 // Check if we have provided local configurations
 const hasLocalConfig = Object.values(localFirebaseConfig).every(Boolean);
 
+const isProduction = process.env.NODE_ENV === "production";
+
 const app = getApps().length === 0
-    ? initializeApp(hasLocalConfig ? localFirebaseConfig : {}) // zero-args on production cloud
+    ? initializeApp(isProduction ? {} : localFirebaseConfig)
     : getApp();
 
 const db = getFirestore(app);
