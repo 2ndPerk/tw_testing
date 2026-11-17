@@ -1,23 +1,23 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 
-// Fallback configuration for local development
 const localFirebaseConfig = {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "mock-api-key",
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "mock-auth-domain",
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "mock-project-id", // Falls back to mock string
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "mock-bucket",
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "mock-sender",
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "mock-app-id",
 };
 
-// Check if we have provided local configurations
-const hasLocalConfig = Object.values(localFirebaseConfig).every(Boolean);
+// Check if we have valid environment configurations
+const hasConfig = Object.values(localFirebaseConfig).every(
+    (val) => val && !val.startsWith("mock-")
+);
 
-const isProduction = process.env.NODE_ENV === "production";
-
+// If no keys are loaded yet (at build-time), initialize with a mock projectId to bypass the check
 const app = getApps().length === 0
-    ? initializeApp(isProduction ? {} : localFirebaseConfig)
+    ? initializeApp(hasConfig ? localFirebaseConfig : { projectId: "mock-project-id" })
     : getApp();
 
 const db = getFirestore(app);
