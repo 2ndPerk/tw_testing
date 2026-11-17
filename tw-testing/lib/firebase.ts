@@ -3,6 +3,7 @@ import { getFirestore } from "firebase/firestore";
 
 const isLocalEnv = process.env.NODE_ENV !== 'production';
 var hasConfig = false;
+var app;
 const localFirebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "mock-api-key",
     authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "mock-auth-domain",
@@ -17,11 +18,13 @@ if (isLocalEnv) {
     hasConfig = Object.values(localFirebaseConfig).every(
         (val) => val && !val.startsWith("mock-")
     );
+
+    app = getApps().length === 0
+        ? initializeApp(hasConfig ? localFirebaseConfig : { projectId: "mock-project-id" })
+        : getApp();
+}else{
+    app = getApps().length === 0 ? initializeApp() : getApp();
 }
-// If no keys are loaded yet (at build-time), initialize with a mock projectId to bypass the check
-const app = getApps().length === 0
-    ? initializeApp(hasConfig ? localFirebaseConfig : { projectId: "mock-project-id" })
-    : getApp();
 
 const db = getFirestore(app);
 
