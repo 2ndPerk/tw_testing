@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { db } from "@/lib/firebase";
+import { db, subscribeToAuthState, signInWithGoogle, logout } from "@/lib/firebase";
 import { collection, addDoc, getDocs, DocumentData } from "firebase/firestore";
+import { User } from "firebase/auth";
 
 interface TestDoc {
     id: string;
@@ -10,9 +11,23 @@ interface TestDoc {
 }
 
 export default function Home() {
+    const [user, setUser] = useState<User | null>(null);
     const [docs, setDocs] = useState<TestDoc[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // Handle data loading and auth subscription on mount
+    useEffect(() => {
+        // 1. Subscribe to auth changes and save clean-up function
+        const unsubscribe = subscribeToAuthState((currentUser) => {
+            setUser(currentUser);
+        });
+
+        fetchDocs();
+
+        // 2. Clean up subscription when the component unmounts
+        return () => unsubscribe();
+    }, []);
 
     // Fetch documents from Firestore
     const fetchDocs = async () => {
@@ -33,11 +48,6 @@ export default function Home() {
         }
     };
 
-    // Load data once when the component mounts
-    useEffect(() => {
-        fetchDocs();
-    }, []);
-
     const addTestDoc = async () => {
         try {
             const docRef = await addDoc(collection(db, "testCollection"), {
@@ -45,7 +55,7 @@ export default function Home() {
                 timestamp: new Date()
             });
             alert(`Document written with ID: ${docRef.id}`);
-            fetchDocs(); // Refresh the list automatically
+            fetchDocs();
         } catch (e) {
             console.error("Error adding document: ", e);
         }
@@ -53,6 +63,25 @@ export default function Home() {
 
     return (
         <main style={{ padding: "2rem", fontFamily: "sans-serif", textAlign: "center" }}>
+            {/* Auth Section at the top */}
+            <div style={{ marginBottom: "2rem", paddingBottom: "1.5rem", borderBottom: "1px solid #eaeaea" }}>
+                {user ? (
+                    <div>
+                        <p>Logged in as: <strong>{user.displayName || user.email}</strong></p>
+                        <button onClick={logout} style={{ padding: "8px 16px", cursor: "pointer" }}>
+                            Sign Out
+                        </button>
+                    </div>
+                ) : (
+                    <div>
+                        <p>Please sign in to access more features.</p>
+                        <button onClick={signInWithGoogle} style={{ padding: "10px 20px", background: "#4285f4", color: "white", border: "none", borderRadius: "4px", cursor: "pointer", fontWeight: "bold" }}>
+                            Sign in with Google
+                        </button>
+                    </div>
+                )}
+            </div>
+
             <h1>🚀 Connect to Firestore Database</h1>
             <button onClick={addTestDoc} style={{ padding: "10px 20px", fontSize: "1rem", marginBottom: "1.5rem" }}>
                 Test Document
