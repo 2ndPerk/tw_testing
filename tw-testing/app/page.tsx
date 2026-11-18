@@ -2,13 +2,15 @@
 
 import React, { useEffect, useState } from "react";
 import { db, auth, subscribeToAuthState, signInWithGoogle, logout } from "@/lib/firebase";
-import { collection, addDoc, getDocs, DocumentData } from "firebase/firestore";
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword, User } from "firebase/auth";
+import { collection, addDoc, getDocs, DocumentData, getDoc, doc, collectionGroup, query, where } from "firebase/firestore";
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, User, onAuthStateChanged, getAuth } from "firebase/auth";
 
 interface TestDoc {
     data: DocumentData;
     id: string;
 }
+
+
 
 export default function Home() {
     const [user, setUser] = useState<User | null>(null);
@@ -22,17 +24,36 @@ export default function Home() {
     const [authError, setAuthError] = useState<string | null>(null);
 
     // Handle data loading and auth subscription on mount
+    // 1. Keep auth subscription strictly to update the user state
     useEffect(() => {
-        // 1. Subscribe to auth changes and save clean-up function
         const unsubscribe = subscribeToAuthState((currentUser) => {
             setUser(currentUser);
         });
-
-        fetchDocs();
-
-        // 2. Clean up subscription when the component unmounts
         return () => unsubscribe();
     }, []);
+
+// 2. React to user state changes to fetch or clear docs
+    useEffect(() => {
+        const loadData = async () => {
+            if (user) {
+                setLoading(true);
+                setError(null);
+                try {
+                    await fetchDocs(); // Inside fetchDocs, 'user' is now fully updated and available!
+                } catch (err) {
+                    setError("Failed to load documents.");
+                } finally {
+                    setLoading(false);
+                }
+            } else {
+                setDocs([]);
+                setLoading(false);
+            }
+        };
+
+        loadData();
+    }, [user]); // Re-runs automatically whenever the 'user' state changes
+
 
     // Update the event parameter to use React.SubmitEvent
     const handleEmailAuth = async (e: React.SubmitEvent<HTMLFormElement>) => {
@@ -55,15 +76,35 @@ export default function Home() {
     // Fetch documents from Firestore
     const fetchDocs = async () => {
         try {
-            const p = "testCollection/" + user?.uid + "/" + user?.uid;
             setLoading(true);
-            const querySnapshot = await getDocs(collection(db, p));
-            const documents: TestDoc[] = [];
-            querySnapshot.forEach((doc) => {
-                documents.push({ id: doc.id, data: doc.data() });
-            });
-            setDocs(documents);
-            setError(null);
+            const userpath = "users/"+user?.uid;
+            const userQuerySnapshot = await getDoc(doc(db, userpath));
+            if (userQuerySnapshot.exists()) {
+                const userData = userQuerySnapshot.data();
+                let querySnapshot;
+
+                // 1. Check if the user has an Admin role
+                if (userData.Role === 'Admin') {
+                    // Query all "messages" subcollections belonging to this company
+                    const messagesRef = collectionGroup(db, 'messages');
+                    const adminQuery = query(messagesRef, where('companyId', '==', userData.Company));
+                    querySnapshot = await getDocs(adminQuery);
+                } else {
+                    // 2. Regular employees only get their own messages
+                    const p = `companies/${userData.Company}/employees/${userData.Name}/messages`;
+                    querySnapshot = await getDocs(collection(db, p));
+                }
+
+                // const p = `companies/${userData.Company}/employees/${userData.Name}/messages`
+                // const querySnapshot = await getDocs(collection(db, p));
+
+                const documents: TestDoc[] = [];
+                querySnapshot.forEach((doc) => {
+                    documents.push({id: doc.id, data: doc.data()});
+                });
+                setDocs(documents);
+                setError(null);
+            }
         } catch (err) {
             console.error("Error reading testCollection: ", err);
             setError((err as Error).message);
@@ -74,15 +115,21 @@ export default function Home() {
 
     const addTestDoc = async () => {
         try {
-            const p = "testCollection/" + user?.uid + "/" + user?.uid;
-            const docRef = await addDoc(collection(db, p), {
-                message: "Hello from my App Hosting MVP!",
-                timestamp: new Date(),
-                //user: user
+            const userpath = "users/"+user?.uid;
+            const userQuerySnapshot = await getDoc(doc(db, userpath));
+            if (userQuerySnapshot.exists()) {
+                const userData = userQuerySnapshot.data();
 
-            });
-            alert(`Document written with ID: ${docRef.id}`);
-            await fetchDocs();
+
+                const p = `companies/${userData.Company}/employees/${userData.Name}/messages`
+                const docRef = await addDoc(collection(db, p), {
+                    message: `Generate by user ${userData.Name} in company ${userData.Company}`,
+                    timestamp: new Date(),
+                    companyId: userData.Company
+                });
+                alert(`Document written with ID: ${docRef.id}`);
+                await fetchDocs();
+            }
         } catch (e) {
             console.error("Error adding document: ", e);
         }
@@ -143,8 +190,11 @@ export default function Home() {
     </div>
 
             <h1>Connect to Firestore Database</h1>
+            <button onClick={fetchDocs} style={{ padding: "10px 20px", fontSize: "1rem", marginBottom: "1.5rem" }}>
+                Load Data
+            </button>
             <button onClick={addTestDoc} style={{ padding: "10px 20px", fontSize: "1rem", marginBottom: "1.5rem" }}>
-                Test Document
+                Create Test Data
             </button>
 
             <div style={{ textAlign: "left", maxWidth: "600px", margin: "0 auto" }}>
