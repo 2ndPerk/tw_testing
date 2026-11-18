@@ -6,8 +6,8 @@ import { collection, addDoc, getDocs, DocumentData } from "firebase/firestore";
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, User } from "firebase/auth";
 
 interface TestDoc {
-    id: string;
     data: DocumentData;
+    id: string;
 }
 
 export default function Home() {
@@ -55,8 +55,9 @@ export default function Home() {
     // Fetch documents from Firestore
     const fetchDocs = async () => {
         try {
+            const p = "testCollection/" + user?.uid + "/" + user?.uid;
             setLoading(true);
-            const querySnapshot = await getDocs(collection(db, "testCollection"));
+            const querySnapshot = await getDocs(collection(db, p));
             const documents: TestDoc[] = [];
             querySnapshot.forEach((doc) => {
                 documents.push({ id: doc.id, data: doc.data() });
@@ -73,12 +74,15 @@ export default function Home() {
 
     const addTestDoc = async () => {
         try {
-            const docRef = await addDoc(collection(db, "testCollection"), {
+            const p = "testCollection/" + user?.uid + "/" + user?.uid;
+            const docRef = await addDoc(collection(db, p), {
                 message: "Hello from my App Hosting MVP!",
-                timestamp: new Date()
+                timestamp: new Date(),
+                //user: user
+
             });
             alert(`Document written with ID: ${docRef.id}`);
-            fetchDocs();
+            await fetchDocs();
         } catch (e) {
             console.error("Error adding document: ", e);
         }
@@ -155,7 +159,7 @@ export default function Home() {
                             <li key={doc.id} style={{ marginBottom: "1rem" }}>
                                 <strong>Document ID:</strong> {doc.id}
                                 <pre style={{ background: "#f4f4f4", padding: "10px", borderRadius: "4px", overflowX: "auto" }}>
-                                    {JSON.stringify(doc.data, null, 2)}
+                                    {JSON.stringify(doc.data, null, 3)}
                                 </pre>
                             </li>
                         ))}
