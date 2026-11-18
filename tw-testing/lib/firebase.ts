@@ -19,12 +19,12 @@ const isLocalEnv = process.env.NODE_ENV !== 'production';
 var hasConfig = false;
 var app;
 const localFirebaseConfig = {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSy-mock-api-key",
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "mock-auth-domain",
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "mock-project-id", // Falls back to mock string
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "mock-bucket",
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "mock-sender",
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "mock-app-id",
+    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyDV884tQRFy1BOeI33Erc1Dvo_pvzGIaog",
+    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "tw-initial-testing.firebaseapp.com",
+    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "tw-initial-testing", // Falls back to mock string
+    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "tw-initial-testing.firebasestorage.app",
+    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "454485604363",
+    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:454485604363:web:235f19deddbc5983a1af0e",
 };
 if (isLocalEnv) {
     console.log('Running in local development mode');
